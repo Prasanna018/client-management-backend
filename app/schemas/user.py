@@ -27,6 +27,25 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: str = Field(alias="_id")
+    studio_id: Optional[str] = None
+    role: str = "staff"
+    is_active: bool = True
+
+    class Config:
+        populate_by_name = True
+        json_encoders = {ObjectId: str}
+
+class StudioBase(BaseModel):
+    name: str
+    logo_url: Optional[str] = None
+
+class StudioCreate(StudioBase):
+    pass
+
+class StudioResponse(StudioBase):
+    id: str = Field(alias="_id")
+    created_at: datetime
+    is_active: bool = True
 
     class Config:
         populate_by_name = True

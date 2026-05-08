@@ -22,7 +22,8 @@ async def auto_update_task_status(task: dict, db):
 async def create_task(task_in: TaskCreate, current_user: dict = Depends(get_current_user)):
     db = get_database()
     task_dict = task_in.dict()
-    task_dict["user_id"] = str(current_user["_id"])
+    task_dict["studio_id"] = current_user.get("studio_id")
+    task_dict["created_by"] = str(current_user["_id"])
     task_dict["created_at"] = datetime.utcnow()
     task_dict["updated_at"] = datetime.utcnow()
     
@@ -37,7 +38,8 @@ async def get_tasks(
     current_user: dict = Depends(get_current_user)
 ):
     db = get_database()
-    query = {"user_id": str(current_user["_id"])}
+    studio_id = current_user.get("studio_id")
+    query = {"studio_id": studio_id}
     
     if workspace_id:
         query["workspace_id"] = workspace_id
@@ -67,7 +69,8 @@ async def get_tasks(
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(task_id: str, current_user: dict = Depends(get_current_user)):
     db = get_database()
-    task = await db["tasks"].find_one({"_id": ObjectId(task_id), "user_id": str(current_user["_id"])})
+    studio_id = current_user.get("studio_id")
+    task = await db["tasks"].find_one({"_id": ObjectId(task_id), "studio_id": studio_id})
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
@@ -78,11 +81,12 @@ async def get_task(task_id: str, current_user: dict = Depends(get_current_user))
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(task_id: str, task_in: TaskUpdate, current_user: dict = Depends(get_current_user)):
     db = get_database()
+    studio_id = current_user.get("studio_id")
     update_data = {k: v for k, v in task_in.dict().items() if v is not None}
     update_data["updated_at"] = datetime.utcnow()
     
     result = await db["tasks"].find_one_and_update(
-        {"_id": ObjectId(task_id), "user_id": str(current_user["_id"])},
+        {"_id": ObjectId(task_id), "studio_id": studio_id},
         {"$set": update_data},
         return_document=True
     )
@@ -94,7 +98,8 @@ async def update_task(task_id: str, task_in: TaskUpdate, current_user: dict = De
 @router.delete("/{task_id}")
 async def delete_task(task_id: str, current_user: dict = Depends(get_current_user)):
     db = get_database()
-    result = await db["tasks"].delete_one({"_id": ObjectId(task_id), "user_id": str(current_user["_id"])})
+    studio_id = current_user.get("studio_id")
+    result = await db["tasks"].delete_one({"_id": ObjectId(task_id), "studio_id": studio_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted"}

@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, workspaces, tasks
+from app.api import auth, workspaces, tasks, studio
 from app.db.mongodb import connect_to_mongo, close_mongo_connection, settings
 
-app = FastAPI(title="ClientFlow API")
+app = FastAPI(title="Pratirang Studio API")
 
 # Configure CORS
 app.add_middleware(
@@ -28,6 +28,7 @@ async def shutdown_db_client():
 
 # Include Routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(studio.router, prefix="/studio", tags=["Studio Management"])
 app.include_router(workspaces.router, prefix="/workspaces", tags=["Workspaces"])
 app.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 
