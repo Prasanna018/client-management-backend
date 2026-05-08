@@ -54,10 +54,8 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
     return {"message": "Login successful"}
 
 @router.post("/refresh")
-async def refresh_token_endpoint(response: Response, refresh_token: str = None):
-    # If refresh_token not in body, check cookies
-    # But usually better to just take it from cookies if possible
-    # For now, let's keep it flexible
+async def refresh_token_endpoint(request: Request, response: Response):
+    refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=401, detail="Refresh token missing")
 
