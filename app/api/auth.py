@@ -13,8 +13,22 @@ router = APIRouter()
 async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
     db = get_database()
     user = await db["users"].find_one({"$or": [{"email": form_data.username}, {"username": form_data.username}]})
-    if not user or not verify_password(form_data.password, user["password"]):
+    if not user:
         raise HTTPException(status_code=400, detail="Incorrect email/username or password")
+    
+    # First-time login: If password is not set, set it now
+    if user.get("password") is None:
+        if len(form_data.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters for first-time setup")
+        
+        hashed_password = get_password_hash(form_data.password)
+        await db["users"].update_one(
+            {"_id": user["_id"]},
+            {"$set": {"password": hashed_password, "updated_at": datetime.utcnow()}}
+        )
+    else:
+        if not verify_password(form_data.password, user["password"]):
+            raise HTTPException(status_code=400, detail="Incorrect email/username or password")
     
     access_token = create_access_token(data={"sub": str(user["_id"])})
     refresh_token = create_refresh_token(data={"sub": str(user["_id"])})

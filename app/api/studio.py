@@ -37,6 +37,8 @@ async def get_studio_members(admin: dict = Depends(get_admin_user)):
     members = await db["users"].find({"studio_id": studio_id}).to_list(100)
     for m in members:
         m["_id"] = str(m["_id"])
+        if "studio_id" in m and m["studio_id"]:
+            m["studio_id"] = str(m["studio_id"])
     return members
 
 @router.post("/members", response_model=UserResponse)
@@ -55,7 +57,7 @@ async def add_studio_member(member_data: dict, admin: dict = Depends(get_admin_u
     new_user = {
         "username": email.split("@")[0],
         "email": email,
-        "password": get_password_hash(member_data.get("password", "Welcome@123")),
+        "password": None,
         "studio_id": studio_id,
         "role": member_data.get("role", "staff"),
         "is_active": True,
@@ -64,6 +66,8 @@ async def add_studio_member(member_data: dict, admin: dict = Depends(get_admin_u
     
     result = await db["users"].insert_one(new_user)
     new_user["_id"] = str(result.inserted_id)
+    if "studio_id" in new_user and new_user["studio_id"]:
+        new_user["studio_id"] = str(new_user["studio_id"])
     return new_user
 
 @router.patch("/members/{user_id}")
