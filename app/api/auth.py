@@ -91,7 +91,13 @@ async def logout(response: Response):
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
+    db = get_database()
     current_user["_id"] = str(current_user["_id"])
     if "studio_id" in current_user and current_user["studio_id"]:
-        current_user["studio_id"] = str(current_user["studio_id"])
+        studio_id = current_user["studio_id"]
+        current_user["studio_id"] = str(studio_id)
+        # Fetch studio name
+        studio = await db["studios"].find_one({"_id": studio_id})
+        if studio:
+            current_user["studio_name"] = studio.get("name")
     return current_user

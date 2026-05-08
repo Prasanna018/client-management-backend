@@ -18,6 +18,9 @@ async def create_workspace(workspace_in: WorkspaceCreate, current_user: dict = D
     
     result = await db["workspaces"].insert_one(workspace_dict)
     workspace_dict["_id"] = str(result.inserted_id)
+    workspace_dict["user_id"] = workspace_dict["created_by"]
+    if "studio_id" in workspace_dict and workspace_dict["studio_id"]:
+        workspace_dict["studio_id"] = str(workspace_dict["studio_id"])
     return workspace_dict
 
 @router.get("", response_model=List[WorkspaceResponse])
@@ -28,6 +31,9 @@ async def get_workspaces(current_user: dict = Depends(get_current_user)):
     workspaces = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
+        doc["user_id"] = doc.get("created_by")
+        if "studio_id" in doc and doc["studio_id"]:
+            doc["studio_id"] = str(doc["studio_id"])
         workspaces.append(doc)
     return workspaces
 
@@ -39,6 +45,9 @@ async def get_workspace(workspace_id: str, current_user: dict = Depends(get_curr
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
     workspace["_id"] = str(workspace["_id"])
+    workspace["user_id"] = workspace.get("created_by")
+    if "studio_id" in workspace and workspace["studio_id"]:
+        workspace["studio_id"] = str(workspace["studio_id"])
     return workspace
 
 @router.put("/{workspace_id}", response_model=WorkspaceResponse)
@@ -55,6 +64,9 @@ async def update_workspace(workspace_id: str, workspace_in: WorkspaceUpdate, cur
     if not result:
         raise HTTPException(status_code=404, detail="Workspace not found")
     result["_id"] = str(result["_id"])
+    result["user_id"] = result.get("created_by")
+    if "studio_id" in result and result["studio_id"]:
+        result["studio_id"] = str(result["studio_id"])
     return result
 
 @router.delete("/{workspace_id}")

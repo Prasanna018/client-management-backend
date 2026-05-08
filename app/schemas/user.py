@@ -28,6 +28,7 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: str = Field(alias="_id")
     studio_id: Optional[str] = None
+    studio_name: Optional[str] = None
     role: str = "staff"
     is_active: bool = True
 

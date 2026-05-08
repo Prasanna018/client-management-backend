@@ -29,6 +29,9 @@ async def create_task(task_in: TaskCreate, current_user: dict = Depends(get_curr
     
     result = await db["tasks"].insert_one(task_dict)
     task_dict["_id"] = str(result.inserted_id)
+    task_dict["user_id"] = task_dict["created_by"]
+    if "studio_id" in task_dict and task_dict["studio_id"]:
+        task_dict["studio_id"] = str(task_dict["studio_id"])
     return task_dict
 
 @router.get("", response_model=List[TaskResponse])
@@ -63,6 +66,9 @@ async def get_tasks(
             ws = await db["workspaces"].find_one({"_id": ObjectId(doc["workspace_id"])})
             if ws:
                 doc["client_name"] = ws["client_name"]
+        doc["user_id"] = doc.get("created_by")
+        if "studio_id" in doc and doc["studio_id"]:
+            doc["studio_id"] = str(doc["studio_id"])
         tasks.append(doc)
     return tasks
 
@@ -76,6 +82,9 @@ async def get_task(task_id: str, current_user: dict = Depends(get_current_user))
     
     task = await auto_update_task_status(task, db)
     task["_id"] = str(task["_id"])
+    task["user_id"] = task.get("created_by")
+    if "studio_id" in task and task["studio_id"]:
+        task["studio_id"] = str(task["studio_id"])
     return task
 
 @router.put("/{task_id}", response_model=TaskResponse)
@@ -93,6 +102,9 @@ async def update_task(task_id: str, task_in: TaskUpdate, current_user: dict = De
     if not result:
         raise HTTPException(status_code=404, detail="Task not found")
     result["_id"] = str(result["_id"])
+    result["user_id"] = result.get("created_by")
+    if "studio_id" in result and result["studio_id"]:
+        result["studio_id"] = str(result["studio_id"])
     return result
 
 @router.delete("/{task_id}")
