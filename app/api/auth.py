@@ -7,21 +7,7 @@ from datetime import datetime
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserResponse)
-async def register(user_in: UserCreate):
-    db = get_database()
-    # Check if user exists
-    existing_user = await db["users"].find_one({"$or": [{"email": user_in.email}, {"username": user_in.username}]})
-    if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
-    
-    user_dict = user_in.dict()
-    user_dict["password"] = get_password_hash(user_dict["password"])
-    user_dict["created_at"] = datetime.utcnow()
-    
-    result = await db["users"].insert_one(user_dict)
-    user_dict["_id"] = str(result.inserted_id)
-    return user_dict
+
 
 @router.post("/login")
 async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
@@ -92,4 +78,6 @@ async def logout(response: Response):
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     current_user["_id"] = str(current_user["_id"])
+    if "studio_id" in current_user and current_user["studio_id"]:
+        current_user["studio_id"] = str(current_user["studio_id"])
     return current_user
