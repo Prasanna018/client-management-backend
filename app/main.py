@@ -1,14 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, workspaces, tasks
-from app.db.mongodb import connect_to_mongo, close_mongo_connection
+from app.db.mongodb import connect_to_mongo, close_mongo_connection, settings
 
 app = FastAPI(title="ClientFlow API")
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the frontend URL
+    allow_origins=[
+        "http://localhost:8080",
+        settings.FRONTEND_URL
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
