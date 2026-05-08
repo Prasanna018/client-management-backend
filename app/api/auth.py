@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.auth.auth_handler import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_token, get_current_user
@@ -33,22 +33,25 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
     access_token = create_access_token(data={"sub": str(user["_id"])})
     refresh_token = create_refresh_token(data={"sub": str(user["_id"])})
     
-    # Set cookies
+    # Set cookies for production (cross-site)
+    # Note: samesite="none" REQUIRES secure=True (HTTPS)
     response.set_cookie(
         key="access_token",
         value=access_token,
-        httponly=False, # Set to False so user can see/access them if they want, but True is better for security
-        max_age=3600, # 1 hour
-        samesite="lax",
-        secure=False # Set to True in production with HTTPS
+        httponly=False, 
+        max_age=3600, 
+        samesite="none",
+        secure=True,
+        path="/"
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=False,
-        max_age=604800, # 7 days
-        samesite="lax",
-        secure=False
+        max_age=604800, 
+        samesite="none",
+        secure=True,
+        path="/"
     )
     
     return {"message": "Login successful"}
@@ -75,15 +78,15 @@ async def refresh_token_endpoint(request: Request, response: Response):
     new_access_token = create_access_token(data={"sub": user_id})
     new_refresh_token = create_refresh_token(data={"sub": user_id})
     
-    response.set_cookie(key="access_token", value=new_access_token, httponly=False, max_age=3600, samesite="lax")
-    response.set_cookie(key="refresh_token", value=new_refresh_token, httponly=False, max_age=604800, samesite="lax")
+    response.set_cookie(key="access_token", value=new_access_token, httponly=False, max_age=3600, samesite="none", secure=True, path="/")
+    response.set_cookie(key="refresh_token", value=new_refresh_token, httponly=False, max_age=604800, samesite="none", secure=True, path="/")
     
     return {"message": "Token refreshed"}
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie(key="access_token", samesite="lax")
-    response.delete_cookie(key="refresh_token", samesite="lax")
+    response.delete_cookie(key="access_token", samesite="none", secure=True, path="/")
+    response.delete_cookie(key="refresh_token", samesite="none", secure=True, path="/")
     return {"message": "Logged out"}
 
 @router.get("/me", response_model=UserResponse)
